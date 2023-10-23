@@ -246,5 +246,5 @@ export const RELAY_LIST = [
   'nostr.mining.sc',
   'nostr.cheeserobot.org',
   'nostr.indexafrica.io',
-  'soloco.nl',
+  'soloco.nl'
 ]

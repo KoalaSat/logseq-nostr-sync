@@ -20,8 +20,8 @@ const getJournalPage = async (unixtime: number): Promise<PageEntity | null> => {
       {
         createFirstBlock: true,
         redirect: false,
-        journal: true,
-      },
+        journal: true
+      }
     )
   }
 
@@ -47,8 +47,8 @@ const syncRelay = async (relayUrl: string): Promise<void> => {
   const sub = relay.sub([
     {
       kinds: [4],
-      '#p': [publicKey],
-    },
+      '#p': [publicKey]
+    }
   ])
 
   sub.on('event', async (event) => {
@@ -56,7 +56,7 @@ const syncRelay = async (relayUrl: string): Promise<void> => {
       const message = await nip04.decrypt(
         logseq.settings?.nostrSyncPrivateKey,
         event.pubkey,
-        event.content,
+        event.content
       )
       const page = await getJournalPage(event.created_at)
 
@@ -66,7 +66,7 @@ const syncRelay = async (relayUrl: string): Promise<void> => {
         if (existingBlock === null && page.uuid !== null) {
           await logseq.Editor.insertBlock(page.uuid, `${message} #${PLUGIN_NAMESPACE}`, {
             before: true,
-            customUUID,
+            customUUID
           })
         }
       } else {
@@ -128,12 +128,12 @@ const setup = async (): Promise<void> => {
     await logseq.Editor.insertBlock(
       targetPage.name,
       'All private messages sent to this public key will be downloaded to Logseq.',
-      { before: true },
+      { before: true }
     )
     await logseq.Editor.insertBlock(
       targetPage.name,
       '⚠️ This generated private key is NOT securely stored:',
-      { before: true },
+      { before: true }
     )
     await logseq.Editor.insertBlock(targetPage.name, nostrNsec, { before: true })
   }
@@ -145,7 +145,7 @@ const setup = async (): Promise<void> => {
  */
 const main = (_baseInfo: LSPluginBaseInfo): void => {
   logseq.provideModel({
-    async syncNostr() {
+    async syncNostr () {
       try {
         if (logseq.settings?.nostrSyncPrivateKey !== null) {
           logseq.App.showMsg('Connecting', 'info')
@@ -166,12 +166,12 @@ const main = (_baseInfo: LSPluginBaseInfo): void => {
         logseq.App.showMsg(e.toString(), 'warning')
         console.error(e)
       }
-    },
+    }
   })
 
   logseq.App.registerUIItem('toolbar', {
     key: 'logseq-nostr',
-    template: NAV_BAR_ICON,
+    template: NAV_BAR_ICON
   })
 }
 
