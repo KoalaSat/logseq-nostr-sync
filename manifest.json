@@ -1,0 +1,7 @@
+{
+    "title": "NostrSynd",
+    "description": "This tooltip allows you to send Direct Messages to a specific public key and download them to your journal based on the creation date." ,
+    "author": "KoalaSat",
+    "repo":"KoalaSat/logseq-nostr-sync",
+    "icon": "icon.png"
+  }
