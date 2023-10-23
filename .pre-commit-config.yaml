@@ -1,0 +1,34 @@
+# TODO
+# add a hook which automatically generates the OpenApi schema on API changes
+# and places them in an appropriate location
+exclude: '(api|chat|control)/migrations/.*'
+repos:
+  - repo: 'https://github.com/pre-commit/pre-commit-hooks'
+    rev: v2.3.0
+    hooks:
+      - id: check-merge-conflict
+      - id: check-yaml
+      - id: check-toml
+      - id: mixed-line-ending
+        args:
+          - '--fix=lf'
+      - id: trailing-whitespace
+      - id: pretty-format-json
+        exclude: ^frontend/
+        args:
+          - '--autofix'
+          - '--no-sort-keys'
+          - '--no-ensure-ascii'
+      - id: check-builtin-literals
+      - id: check-docstring-first
+  - repo: local
+    hooks:
+      - id: prettier
+        name: prettier
+        stages:
+          - commit
+          - merge-commit
+        language: system
+        files: ^frontend/
+        types_or: [javascript, jsx, ts, tsx, css, markdown, json] # uses https://github.com/pre-commit/identify
+        entry: bash -c 'npm run format'
