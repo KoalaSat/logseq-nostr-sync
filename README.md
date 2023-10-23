@@ -26,3 +26,4 @@ Select the root folder of this plugin repo.
 
 
 Made with 🐨 by [KoalaSat](https://github.com/KoalaSat)
+⚡ koalasat@getalby.com
