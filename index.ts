@@ -1,17 +1,19 @@
 import '@logseq/libs'
-import { LSPluginBaseInfo } from '@logseq/libs/dist/libs'
+import { type PageEntity, type AppUserConfigs, type LSPluginBaseInfo } from '@logseq/libs/dist/libs'
 import { format } from 'date-fns'
 import { generatePrivateKey, getPublicKey, nip19, relayInit, nip04 } from 'nostr-tools'
 import { NAV_BAR_ICON, PLUGIN_NAMESPACE, RELAY_LIST, UUID_SEED } from './constants'
 import { v5 as uuidv5 } from 'uuid'
 
-const delay = (t = 100) => new Promise(r => setTimeout(r, t))
-let config;
+const delay = async (t = 100): Promise<void> => {
+  await new Promise((resolve) => setTimeout(resolve, t))
+}
+let config: AppUserConfigs
 
-async function getJournalPage(unixtime: number) {
+const getJournalPage = async (unixtime: number): Promise<PageEntity | null> => {
   const journalName = format(new Date(unixtime * 1000), config.preferredDateFormat)
-  let page = logseq.Editor.getPage(journalName)
-  if (!page) {
+  const page = logseq.Editor.getPage(journalName)
+  if (page === null) {
     await logseq.Editor.createPage(
       journalName,
       {},
@@ -19,14 +21,14 @@ async function getJournalPage(unixtime: number) {
         createFirstBlock: true,
         redirect: false,
         journal: true,
-      }
-    );
+      },
+    )
   }
 
-  return page
+  return await page
 }
 
-async function syncRelay(relayUrl: string) {
+const syncRelay = async (relayUrl: string): Promise<void> => {
   const relay = relayInit(`wss://${relayUrl}`)
   relay.on('connect', () => {
     logseq.App.showMsg(`connected to ${relay.url}`, 'success')
@@ -37,33 +39,40 @@ async function syncRelay(relayUrl: string) {
 
   await relay.connect()
 
-  delay(3000)
+  await delay(1000)
 
   const publicKey = getPublicKey(logseq.settings?.nostrSyncPrivateKey)
-  config = await logseq.App.getUserConfigs();
+  config = await logseq.App.getUserConfigs()
 
-  let sub = relay.sub([
+  const sub = relay.sub([
     {
       kinds: [4],
-      '#p': [publicKey]
+      '#p': [publicKey],
     },
   ])
 
   sub.on('event', async (event) => {
     try {
-      const message = await nip04.decrypt(logseq.settings?.nostrSyncPrivateKey, event.pubkey, event.content)
-      const page = await getJournalPage(event.created_at);
+      const message = await nip04.decrypt(
+        logseq.settings?.nostrSyncPrivateKey,
+        event.pubkey,
+        event.content,
+      )
+      const page = await getJournalPage(event.created_at)
 
-      if (page?.uuid) {
-        const customUUID: string = uuidv5(event.id, UUID_SEED);
+      if (page !== null) {
+        const customUUID: string = uuidv5(event.id, UUID_SEED)
         const existingBlock = await logseq.Editor.getBlock(customUUID)
-        if (existingBlock === null) {
-          await logseq.Editor.insertBlock(page?.uuid, `${message} #${PLUGIN_NAMESPACE}`, { before: true, customUUID })
+        if (existingBlock === null && page.uuid !== null) {
+          await logseq.Editor.insertBlock(page.uuid, `${message} #${PLUGIN_NAMESPACE}`, {
+            before: true,
+            customUUID,
+          })
         }
       } else {
         logseq.App.showMsg('Journal not found', 'warning')
       }
-    } catch (e) {
+    } catch (e: any) {
       logseq.App.showMsg(e.toString(), 'warning')
       console.error(e)
     }
@@ -72,21 +81,24 @@ async function syncRelay(relayUrl: string) {
     sub.unsub()
   })
 
-  delay(10000)
+  await delay(10000)
 }
 
-async function setup() {
+const setup = async (): Promise<void> => {
   const targetPage = await logseq.Editor.createPage(PLUGIN_NAMESPACE)
   logseq.App.pushState('page', targetPage)
 
-  if (targetPage === null) return logseq.App.showMsg('Page error', 'warning')
+  if (targetPage === null) {
+    logseq.App.showMsg('Page error', 'warning')
+    return
+  }
 
   const pageBlocksTree = await logseq.Editor.getCurrentPageBlocksTree()
   let tagetBlockUuid = pageBlocksTree[0]?.uuid
 
   const content = '🚀 Generating PubKey ...'
 
-  if (tagetBlockUuid) {
+  if (tagetBlockUuid !== undefined) {
     await logseq.Editor.updateBlock(tagetBlockUuid, content)
   } else {
     const newBlock = await logseq.Editor.insertBlock(targetPage.name, content, { before: true })
@@ -94,7 +106,7 @@ async function setup() {
   }
 
   const privateKey = generatePrivateKey()
-  const relays = []
+  const relays: string[] = []
 
   while (relays.length < 3) {
     const randomPosition = Math.floor(Math.random() * RELAY_LIST.length)
@@ -110,11 +122,19 @@ async function setup() {
   const nostrNpub = nip19.nprofileEncode({ pubkey: publicKey, relays })
   const nostrNsec = nip19.nsecEncode(privateKey)
 
-  if (publicKey) {
+  if (publicKey !== null) {
     await logseq.Editor.updateBlock(tagetBlockUuid, 'This is the public key of your Logseq client:')
     await logseq.Editor.insertBlock(targetPage.name, nostrNpub, { before: true })
-    await logseq.Editor.insertBlock(targetPage.name, 'All private messages sent to this public key will be downloaded to Logseq.', { before: true })
-    await logseq.Editor.insertBlock(targetPage.name, '⚠️ This generated private key is NOT securely stored:', { before: true })
+    await logseq.Editor.insertBlock(
+      targetPage.name,
+      'All private messages sent to this public key will be downloaded to Logseq.',
+      { before: true },
+    )
+    await logseq.Editor.insertBlock(
+      targetPage.name,
+      '⚠️ This generated private key is NOT securely stored:',
+      { before: true },
+    )
     await logseq.Editor.insertBlock(targetPage.name, nostrNsec, { before: true })
   }
 }
@@ -123,31 +143,35 @@ async function setup() {
  * main entry
  * @param baseInfo
  */
-function main(_baseInfo: LSPluginBaseInfo) {
+const main = (_baseInfo: LSPluginBaseInfo): void => {
   logseq.provideModel({
     async syncNostr() {
       try {
-        if (logseq.settings?.nostrSyncPrivateKey) {
+        if (logseq.settings?.nostrSyncPrivateKey !== null) {
           logseq.App.showMsg('Connecting', 'info')
           const relays = logseq.settings?.nostrSyncRelays
-          if (relays && relays.length > 0) {
-            relays.forEach((name) => {
-              syncRelay(name)
+          if (relays !== null && relays.length > 0) {
+            relays.forEach((name: string) => {
+              syncRelay(name).catch((e) => {
+                logseq.App.showMsg(e.toString(), 'warning')
+              })
             })
           }
         } else {
-          setup()
+          setup().catch((e) => {
+            logseq.App.showMsg(e.toString(), 'warning')
+          })
         }
-      } catch (e) {
+      } catch (e: any) {
         logseq.App.showMsg(e.toString(), 'warning')
         console.error(e)
       }
-    }
+    },
   })
 
   logseq.App.registerUIItem('toolbar', {
     key: 'logseq-nostr',
-    template: NAV_BAR_ICON
+    template: NAV_BAR_ICON,
   })
 }
 
