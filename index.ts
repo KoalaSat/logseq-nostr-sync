@@ -1,9 +1,9 @@
 import '@logseq/libs'
-import { type PageEntity, type AppUserConfigs, type LSPluginBaseInfo } from '@logseq/libs/dist/libs'
 import { format } from 'date-fns'
 import { generatePrivateKey, getPublicKey, nip19, relayInit, nip04 } from 'nostr-tools'
 import { NAV_BAR_ICON, PLUGIN_NAMESPACE, RELAY_LIST, UUID_SEED } from './constants'
 import { v5 as uuidv5 } from 'uuid'
+import { AppUserConfigs, PageEntity } from '@logseq/libs/dist/LSPlugin.user'
 
 const delay = async (t = 100): Promise<void> => {
   await new Promise((resolve) => setTimeout(resolve, t))
@@ -72,7 +72,7 @@ const syncRelay = async (relayUrl: string): Promise<void> => {
       } else {
         logseq.App.showMsg('Journal not found', 'warning')
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       logseq.App.showMsg(e.toString(), 'warning')
       console.error(e)
     }
@@ -143,7 +143,7 @@ const setup = async (): Promise<void> => {
  * main entry
  * @param baseInfo
  */
-const main = (_baseInfo: LSPluginBaseInfo): void => {
+const main = (): void => {
   logseq.provideModel({
     async syncNostr () {
       try {
@@ -162,7 +162,7 @@ const main = (_baseInfo: LSPluginBaseInfo): void => {
             logseq.App.showMsg(e.toString(), 'warning')
           })
         }
-      } catch (e: any) {
+      } catch (e: unknown) {
         logseq.App.showMsg(e.toString(), 'warning')
         console.error(e)
       }
