@@ -22,3 +22,6 @@ This will bring up the "Plugins" entry in three dots more menu list on the top r
 ### Support
 
 - Icon: https://github.com/satscoffee/nostr_icons
+
+
+Made with 🐨 by [KoalaSat](https://github.com/KoalaSat)
