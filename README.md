@@ -1,0 +1,1 @@
+# logseq_nostr_sync
