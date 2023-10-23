@@ -147,10 +147,10 @@ const main = (_baseInfo: LSPluginBaseInfo): void => {
   logseq.provideModel({
     async syncNostr () {
       try {
-        if (logseq.settings?.nostrSyncPrivateKey !== null) {
+        if (logseq.settings?.nostrSyncPrivateKey !== undefined) {
           logseq.App.showMsg('Connecting', 'info')
           const relays = logseq.settings?.nostrSyncRelays
-          if (relays !== null && relays.length > 0) {
+          if (relays !== undefined && relays.length > 0) {
             relays.forEach((name: string) => {
               syncRelay(name).catch((e) => {
                 logseq.App.showMsg(e.toString(), 'warning')
