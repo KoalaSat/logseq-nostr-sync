@@ -13,9 +13,7 @@ This tooltip allows you to send Direct Messages to a specific public key and dow
 
 Run `npm install && npm run build` in terminal to install dependencies.
 
-Open LogSeq
-
-Go to Settings > Turn on Developer Mode
+Open LogSeq > Settings > Turn on Developer Mode
 
 This will bring up the "Plugins" entry in three dots more menu list on the top right of the header bar. Go to Plugins page, and you will get a button with the Load unpacked plugin label. 
 Select the root folder of this plugin repo.
