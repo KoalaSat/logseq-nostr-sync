@@ -33,16 +33,17 @@ jobs:
           echo "::set-output name=tag_name::$(git tag --sort version:refname | tail -n 1)"
 
       - name: Create Release
-        uses: ncipollo/release-action@v1
+        uses: softprops/action-gh-release@v1
         id: create_release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VERSION: ${{ github.ref }}
         with:
-          allowUpdates: true
-          draft: false
-          prerelease: false
+          body: |
+            **New Nostros Release [${{ github.ref_name }}]**
 
+            **Changelog**
+
+            https://github.com/KoalaSat/nostros/releases/${{ github.ref_name }}
+
+            **What's Changed**
       - name: Upload zip file
         id: upload_zip
         uses: actions/upload-release-asset@v1
