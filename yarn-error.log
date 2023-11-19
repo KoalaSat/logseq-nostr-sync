@@ -64,7 +64,7 @@ npm manifest:
     "license": "MIT",
     "logseq": {
       "id": "_rw0ras038",
-      "icon": "./logo.png"
+      "icon": "./icon.png"
     },
     "dependencies": {
       "@logseq/libs": "^0.0.1-alpha.22",
