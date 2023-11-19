@@ -1,7 +1,7 @@
 {
   "name": "logseq-nostr-sync",
   "version": "0.0.1",
-  "description": "Read r/logseq hot news using Logseq blocks.",
+  "description": "Allows you to send Direct Messages to a specific Nostr public key and download them to your journal based on the creation date.",
   "main": "dist/index.html",
   "targets": {
     "main": false
@@ -20,6 +20,9 @@
   "license": "MIT",
   "logseq": {
     "id": "_rw0ras038",
+    "title": "Nostr sync",
+    "description": "Allows you to send Direct Messages to a specific Nostr public key and download them to your journal based on the creation date.",
+    "author": "KoalaSat",
     "icon": "./logo.png"
   },
   "dependencies": {
