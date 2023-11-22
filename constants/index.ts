@@ -12,7 +12,6 @@ export const UUID_SEED = 'ab89cdfc-e145-4634-b47a-a3bc65394ad0'
 
 export const RELAY_LIST = [
   'relayable.org',
-  'brb.io',
   'nos.lol',
   'relay.damus.io',
   'soloco.nl'

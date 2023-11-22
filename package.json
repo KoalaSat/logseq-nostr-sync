@@ -26,15 +26,15 @@
     "icon": "./icon.png"
   },
   "dependencies": {
-    "@logseq/libs": "^0.0.1-alpha.22",
+    "@logseq/libs": "^0.0.15",
     "date-fns": "^2.30.0",
     "nostr-tools": "^1.17.0",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
     "@types/uuid": "^9.0.6",
-    "@typescript-eslint/eslint-plugin": "^6.8.0",
-    "@typescript-eslint/parser": "^6.8.0",
+    "@typescript-eslint/eslint-plugin": "^5.43.0",
+    "@typescript-eslint/parser": "^5.43.0",
     "eslint": "^8.42.0",
     "eslint-config-standard-with-typescript": "^34.0.1",
     "eslint-import-resolver-typescript": "^3.5.4",

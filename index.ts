@@ -1,6 +1,6 @@
 import '@logseq/libs'
 import { format } from 'date-fns'
-import { generatePrivateKey, getPublicKey, nip19, relayInit, nip04 } from 'nostr-tools'
+import { generatePrivateKey, getPublicKey, nip19, relayInit, nip04, nip42, finishEvent } from 'nostr-tools'
 import { NAV_BAR_ICON, PLUGIN_NAMESPACE, RELAY_LIST, UUID_SEED } from './constants'
 import { v5 as uuidv5 } from 'uuid'
 import { AppUserConfigs, PageEntity } from '@logseq/libs/dist/LSPlugin.user'
@@ -31,18 +31,25 @@ const getJournalPage = async (unixtime: number): Promise<PageEntity | null> => {
 const syncRelay = async (relayUrl: string): Promise<void> => {
   const relay = relayInit(`wss://${relayUrl}`)
   relay.on('connect', () => {
-    logseq.App.showMsg(`connected to ${relay.url}`, 'success')
+    logseq.UI.showMsg(`connected to ${relay.url}`, 'success')
   })
   relay.on('error', () => {
-    logseq.App.showMsg(`failed to connect to ${relay.url}`, 'warning')
+    logseq.UI.showMsg(`failed to connect to ${relay.url}`, 'warning')
   })
 
   await relay.connect()
 
   await delay(1000)
 
+  const secretKey = logseq.settings?.nostrSyncPrivateKey
   const publicKey = getPublicKey(logseq.settings?.nostrSyncPrivateKey)
   config = await logseq.App.getUserConfigs()
+
+  relay.on('auth', (challenge) => {
+    nip42.authenticate({ relay, sign: (e) => finishEvent(e, secretKey), challenge })
+  })
+
+  await delay(500)
 
   const sub = relay.sub([
     {
@@ -70,10 +77,10 @@ const syncRelay = async (relayUrl: string): Promise<void> => {
           })
         }
       } else {
-        logseq.App.showMsg('Journal not found', 'warning')
+        logseq.UI.showMsg('Journal not found', 'warning')
       }
     } catch (e: unknown) {
-      logseq.App.showMsg(e.toString(), 'warning')
+      logseq.UI.showMsg(e.toString(), 'warning')
       console.error(e)
     }
   })
@@ -89,7 +96,7 @@ const setup = async (): Promise<void> => {
   logseq.App.pushState('page', targetPage)
 
   if (targetPage === null) {
-    logseq.App.showMsg('Page error', 'warning')
+    logseq.UI.showMsg('Page error', 'warning')
     return
   }
 
@@ -108,7 +115,7 @@ const setup = async (): Promise<void> => {
   const privateKey = generatePrivateKey()
   const relays: string[] = []
 
-  while (relays.length < 3) {
+  while (relays.length < 4) {
     const randomPosition = Math.floor(Math.random() * RELAY_LIST.length)
     const relayUrl = RELAY_LIST[randomPosition]
     if (!relays.includes(relayUrl)) {
@@ -148,22 +155,22 @@ const main = (): void => {
     async syncNostr () {
       try {
         if (logseq.settings?.nostrSyncPrivateKey !== undefined) {
-          logseq.App.showMsg('Connecting', 'info')
+          logseq.UI.showMsg('Connecting', 'info')
           const relays = logseq.settings?.nostrSyncRelays
           if (relays !== undefined && relays.length > 0) {
             relays.forEach((name: string) => {
               syncRelay(name).catch((e) => {
-                logseq.App.showMsg(e.toString(), 'warning')
+                logseq.UI.showMsg(e.toString(), 'warning')
               })
             })
           }
         } else {
           setup().catch((e) => {
-            logseq.App.showMsg(e.toString(), 'warning')
+            logseq.UI.showMsg(e.toString(), 'warning')
           })
         }
       } catch (e: unknown) {
-        logseq.App.showMsg(e.toString(), 'warning')
+        logseq.UI.showMsg(e.toString(), 'warning')
         console.error(e)
       }
     }
