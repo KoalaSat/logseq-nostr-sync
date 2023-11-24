@@ -3,12 +3,38 @@ import { format } from 'date-fns'
 import { generatePrivateKey, getPublicKey, nip19, relayInit, nip04, nip42, finishEvent } from 'nostr-tools'
 import { NAV_BAR_ICON, PLUGIN_NAMESPACE, RELAY_LIST, UUID_SEED } from './constants'
 import { v5 as uuidv5 } from 'uuid'
-import { AppUserConfigs, PageEntity } from '@logseq/libs/dist/LSPlugin.user'
+import { AppUserConfigs, PageEntity, SettingSchemaDesc } from '@logseq/libs/dist/LSPlugin.user'
 
 const delay = async (t = 100): Promise<void> => {
   await new Promise((resolve) => setTimeout(resolve, t))
 }
 let config: AppUserConfigs
+
+const settingsTemplate: SettingSchemaDesc[] = [
+  {
+    key: "nostrSyncPrivateKey",
+    type: "string",
+    default: "",
+    title: "Your Logseq private key",
+    description:
+      "Should follow nsec format",
+  },
+  {
+    key: "nostrSyncRelays",
+    type: "string",
+    default: '[]',
+    title: "Relays",
+    description: ''
+  },
+  {
+    key: "nostrSyncAllowedPubkey",
+    type: "string",
+    default: '',
+    title: "Allowed Pubkey",
+    description: 'Will only fetch messages from this Pubkey. If left empty, will fetch from any source.'
+  },
+]
+logseq.useSettingsSchema(settingsTemplate)
 
 const getJournalPage = async (unixtime: number): Promise<PageEntity | null> => {
   const journalName = format(new Date(unixtime * 1000), config.preferredDateFormat)
@@ -28,6 +54,15 @@ const getJournalPage = async (unixtime: number): Promise<PageEntity | null> => {
   return await page
 }
 
+const getDecodedSecretKey: () => Promise<string> = async () => {
+  const nsecDecoded = await nip19.decode(logseq.settings?.nostrSyncPrivateKey)
+  if (nsecDecoded.type === 'nsec') {
+    return  nsecDecoded.data as string
+  }
+
+  return ''
+}
+
 const syncRelay = async (relayUrl: string): Promise<void> => {
   const relay = relayInit(`wss://${relayUrl}`)
   relay.on('connect', () => {
@@ -41,9 +76,19 @@ const syncRelay = async (relayUrl: string): Promise<void> => {
 
   await delay(1000)
 
-  const secretKey = logseq.settings?.nostrSyncPrivateKey
-  const publicKey = getPublicKey(logseq.settings?.nostrSyncPrivateKey)
+  const secretKey = await getDecodedSecretKey()
+  const publicKey = getPublicKey(secretKey)
   config = await logseq.App.getUserConfigs()
+
+  const pets = [publicKey]
+  if (logseq.settings?.nostrSyncAllowedPubkey !== '') {
+    const allowedPubKey = nip19.decode(logseq.settings?.nostrSyncAllowedPubkey)
+    if (allowedPubKey.type === 'npub') {
+      pets.push(allowedPubKey.data as string)
+    } else if (allowedPubKey.type === 'nprofile') {
+      pets.push(allowedPubKey.data.pubkey as string)
+    }
+  }
 
   relay.on('auth', (challenge) => {
     nip42.authenticate({ relay, sign: (e) => finishEvent(e, secretKey), challenge })
@@ -54,14 +99,14 @@ const syncRelay = async (relayUrl: string): Promise<void> => {
   const sub = relay.sub([
     {
       kinds: [4],
-      '#p': [publicKey]
+      '#p': pets
     }
   ])
 
   sub.on('event', async (event) => {
     try {
       const message = await nip04.decrypt(
-        logseq.settings?.nostrSyncPrivateKey,
+        await getDecodedSecretKey(),
         event.pubkey,
         event.content
       )
@@ -93,11 +138,12 @@ const syncRelay = async (relayUrl: string): Promise<void> => {
 
 const setup = async (): Promise<void> => {
   const targetPage = await logseq.Editor.createPage(PLUGIN_NAMESPACE)
-  logseq.App.pushState('page', targetPage)
 
   if (targetPage === null) {
     logseq.UI.showMsg('Page error', 'warning')
     return
+  } else {
+    logseq.App.pushState('page', targetPage)
   }
 
   const pageBlocksTree = await logseq.Editor.getCurrentPageBlocksTree()
@@ -123,11 +169,11 @@ const setup = async (): Promise<void> => {
     }
   }
 
-  logseq.updateSettings({ nostrSyncPrivateKey: privateKey, nostrSyncRelays: relays })
-
   const publicKey = getPublicKey(privateKey)
-  const nostrNpub = nip19.nprofileEncode({ pubkey: publicKey, relays })
   const nostrNsec = nip19.nsecEncode(privateKey)
+  const nostrNpub = nip19.nprofileEncode({ pubkey: publicKey, relays })
+
+  logseq.updateSettings({ nostrSyncPrivateKey: nostrNsec, nostrSyncRelays: JSON.stringify(relays) })
 
   if (publicKey !== null) {
     await logseq.Editor.updateBlock(tagetBlockUuid, 'This is the public key of your Logseq client:')
@@ -154,9 +200,9 @@ const main = (): void => {
   logseq.provideModel({
     async syncNostr () {
       try {
-        if (logseq.settings?.nostrSyncPrivateKey !== undefined) {
+        if (logseq.settings?.nostrSyncPrivateKey !== '') {
           logseq.UI.showMsg('Connecting', 'info')
-          const relays = logseq.settings?.nostrSyncRelays
+          const relays = JSON.parse(logseq.settings?.nostrSyncRelays)
           if (relays !== undefined && relays.length > 0) {
             relays.forEach((name: string) => {
               syncRelay(name).catch((e) => {
