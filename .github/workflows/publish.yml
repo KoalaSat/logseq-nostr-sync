@@ -37,11 +37,11 @@ jobs:
         id: create_release
         with:
           body: |
-            **New Nostros Release [${{ github.ref_name }}]**
+            **New Release [${{ github.ref_name }}]**
 
             **Changelog**
 
-            https://github.com/KoalaSat/nostros/releases/${{ github.ref_name }}
+            https://github.com/KoalaSat/logseq-nostr-sync/releases/${{ github.ref_name }}
 
             **What's Changed**
       - name: Upload zip file
