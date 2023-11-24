@@ -24,7 +24,7 @@ const settingsTemplate: SettingSchemaDesc[] = [
     type: "string",
     default: '[]',
     title: "Relays",
-    description: ''
+    description: 'Should follow JSON array format'
   },
   {
     key: "nostrSyncAllowedPubkey",
